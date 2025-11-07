@@ -6,7 +6,6 @@ import com.ninjaone.dundie_awards.model.Organization;
 import com.ninjaone.dundie_awards.repository.EmployeeRepository;
 import com.ninjaone.dundie_awards.repository.OrganizationRepository;
 import com.ninjaone.dundie_awards.service.impl.AwardsServiceImpl;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,12 +14,15 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
-class AwardServiceIntegrationTest {
+class AwardServiceFailedToPublishEventIntegrationTest {
 
+
+    //We need to mock this to fail publishing of the event
     @MockBean(name = "applicationEventMulticaster")
     private ApplicationEventMulticaster multicaster;
 
@@ -32,9 +34,6 @@ class AwardServiceIntegrationTest {
 
     @Autowired
     private AwardsServiceImpl awardService;
-
-    @Autowired
-    EntityManager entityManager;
 
     private Organization organization;
     private static final int NUMBER_OF_EMPLOYEES = 10;
@@ -48,28 +47,15 @@ class AwardServiceIntegrationTest {
         }
     }
 
+    /**
+     * In this test case we:
+     * - Successfully give awards to all users of the org
+     * - Fail to publish the event
+     * - Roll back the awards given (via transaction)
+     */
     @Test
     @Transactional
-    void testGiveAwards_SuccessfulPublish() throws FailedToGiveAwardsException {
-
-        // When
-        int result = awardService.giveAwards(organization.getId());
-
-        entityManager.flush();
-        entityManager.clear();
-
-        // Then
-        // all employees of the org updated
-        assertEquals(NUMBER_OF_EMPLOYEES, result);
-
-        // Assert by querying the db
-        long numUpdated = employeeRepository.findAll().stream().filter(e -> (e.getOrganization().getId() == organization.getId() && e.getDundieAwards() == 1)).count();
-        assertEquals(NUMBER_OF_EMPLOYEES, numUpdated);
-    }
-
-    @Test
-    @Transactional
-    void testGiveAwards_PublishFails_RollsBack() {
+    void testGiveAwards_failedToPublishEvent() {
         doThrow(new RuntimeException("Publish failed"))
                 .when(multicaster)
                 .multicastEvent(any(), any());
