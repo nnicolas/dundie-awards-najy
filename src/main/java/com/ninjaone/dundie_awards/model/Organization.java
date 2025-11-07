@@ -1,5 +1,6 @@
 package com.ninjaone.dundie_awards.model;
 
+import com.ninjaone.dundie_awards.common.Constraints;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,7 +11,7 @@ public class Organization {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private long id;
 
-  @Column(name = "name")
+  @Column(name = "name", nullable = false, length = Constraints.NAME_MAX)
   private String name;
 
   public Organization() {

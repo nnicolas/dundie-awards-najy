@@ -1,5 +1,6 @@
 package com.ninjaone.dundie_awards.model;
 
+import com.ninjaone.dundie_awards.common.Constraints;
 import jakarta.persistence.*;
 
 @Entity
@@ -10,16 +11,16 @@ public class Employee {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(name = "first_name")
+    @Column(name = "first_name", nullable = false, length = Constraints.NAME_MAX)
     private String firstName;
 
-    @Column(name = "last_name")
+    @Column(name = "last_name", nullable = false, length = Constraints.NAME_MAX)
     private String lastName;
 
-    @Column(name = "dundie_awards")
+    @Column(name = "dundie_awards", nullable = false)
     private int dundieAwards;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     private Organization organization;
 
     public Employee() {

@@ -1,5 +1,6 @@
 package com.ninjaone.dundie_awards.model;
 
+import com.ninjaone.dundie_awards.common.Constraints;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -11,10 +12,10 @@ public class Activity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(name = "occurred_at")
+    @Column(name = "occurred_at", nullable = false)
     private LocalDateTime occurredAt;
 
-    @Column(name = "event")
+    @Column(name = "event", nullable = false,  length = Constraints.EVENT_DESC_MAX)
     private String event;
 
     public Activity() {

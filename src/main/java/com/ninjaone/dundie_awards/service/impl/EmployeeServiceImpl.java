@@ -60,6 +60,7 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     public EmployeeDto save(EmployeeDto employeeDto) {
         Employee employee = EmployeeMapper.toEntity(employeeDto);
+        employee.setDundieAwards(0);
         employee.setOrganization(organizationRepository.getReferenceById(employeeDto.getOrganization().getId()));
         employee = employeeRepository.save(employee);
         return EmployeeMapper.toDto(employee);

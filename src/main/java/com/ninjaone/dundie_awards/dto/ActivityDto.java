@@ -1,6 +1,9 @@
 package com.ninjaone.dundie_awards.dto;
 
 
+import com.ninjaone.dundie_awards.common.Constraints;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDateTime;
 
 public class ActivityDto {
@@ -9,6 +12,7 @@ public class ActivityDto {
 
     private LocalDateTime occurredAt;
 
+    @Size(min= Constraints.EVENT_DESC_MIN, max = Constraints.EVENT_DESC_MAX, message = "Event Description must be between " + Constraints.NAME_MIN + " and " + Constraints.NAME_MAX + " characters")
     private String event;
 
     public ActivityDto() {

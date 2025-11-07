@@ -1,16 +1,19 @@
 package com.ninjaone.dundie_awards.dto;
 
+import com.ninjaone.dundie_awards.common.Constraints;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public class EmployeeDto {
 
     private long id;
 
-    @Size(min = 3, max = 20, message = "First Name must be between 3 and 20 characters")
+    @NotBlank
+    @Size(min= Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "First Name must be between " + Constraints.NAME_MIN + " and " + Constraints.NAME_MAX + " characters")
     private String firstName;
 
-    @Size(min = 3, max = 20, message = "Last Name must be between 3 and 20 characters")
+    @Size(min= Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "Last Name must be between " + Constraints.NAME_MIN + " and " + Constraints.NAME_MAX + " characters")
     private String lastName;
 
     @Min(value = 0, message = "Number of awards can't be negative")
