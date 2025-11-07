@@ -1,34 +1,28 @@
-package com.ninjaone.dundie_awards.model;
+package com.ninjaone.dundie_awards.dto;
 
-import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "activities")
-public class Activity {
+public class ActivityDto {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(name = "occured_at")
     private LocalDateTime occuredAt;
 
-    @Column(name = "event")
     private String event;
 
-    public Activity() {
+    public ActivityDto() {
 
     }
 
-    public Activity(LocalDateTime localDateTime, String event) {
+    public ActivityDto(LocalDateTime occuredAt, String event) {
         super();
-        this.occuredAt = localDateTime;
+        this.occuredAt = occuredAt;
         this.event = event;
     }
 
     public long getId() {
-        return this.id;
+        return id;
     }
 
     public void setId(long id) {
@@ -44,7 +38,7 @@ public class Activity {
     }
 
     public String getEvent() {
-        return this.event;
+        return event;
     }
 
     public void setEvent(String event) {

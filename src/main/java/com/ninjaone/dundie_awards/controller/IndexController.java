@@ -1,8 +1,7 @@
 package com.ninjaone.dundie_awards.controller;
 
-import com.ninjaone.dundie_awards.repository.ActivityRepository;
-import com.ninjaone.dundie_awards.repository.EmployeeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.ninjaone.dundie_awards.service.ActivityService;
+import com.ninjaone.dundie_awards.service.EmployeeService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,16 +12,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/")
 public class IndexController {
 
-    @Autowired
-    private EmployeeRepository employeeRepository;
+    private final EmployeeService employeeService;
 
-    @Autowired
-    private ActivityRepository activityRepository;
+    private final ActivityService activityService;
+
+    public IndexController(EmployeeService employeeService, ActivityService activityService) {
+        this.employeeService = employeeService;
+        this.activityService = activityService;
+    }
 
     @GetMapping()
     public String getIndex(Model model) {
-        model.addAttribute("employees", employeeRepository.findAll());
-        model.addAttribute("activities", activityRepository.findAll());
+        model.addAttribute("employees", employeeService.getAllEmployees());
+        model.addAttribute("activities", activityService.getAllActivities());
         return "index";
     }
 }
