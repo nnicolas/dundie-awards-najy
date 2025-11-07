@@ -10,7 +10,7 @@ public class ActivityMapper {
         Activity activity = new Activity();
         activity.setId(activityDto.getId());
         activity.setEvent(activityDto.getEvent());
-        activity.setOccuredAt(activityDto.getOccuredAt());
+        activity.setOccurredAt(activityDto.getOccurredAt());
         return activity;
     }
 
@@ -18,7 +18,7 @@ public class ActivityMapper {
         ActivityDto activityDto = new ActivityDto();
         activityDto.setId(activity.getId());
         activityDto.setEvent(activity.getEvent());
-        activityDto.setOccuredAt(activity.getOccuredAt());
+        activityDto.setOccurredAt(activity.getOccurredAt());
         return activityDto;
     }
 }

@@ -7,7 +7,7 @@ public class ActivityDto {
 
     private long id;
 
-    private LocalDateTime occuredAt;
+    private LocalDateTime occurredAt;
 
     private String event;
 
@@ -15,9 +15,9 @@ public class ActivityDto {
 
     }
 
-    public ActivityDto(LocalDateTime occuredAt, String event) {
+    public ActivityDto(LocalDateTime occurredAt, String event) {
         super();
-        this.occuredAt = occuredAt;
+        this.occurredAt = occurredAt;
         this.event = event;
     }
 
@@ -29,12 +29,12 @@ public class ActivityDto {
         this.id = id;
     }
 
-    public LocalDateTime getOccuredAt() {
-        return occuredAt;
+    public LocalDateTime getOccurredAt() {
+        return occurredAt;
     }
 
-    public void setOccuredAt(LocalDateTime occuredAt) {
-        this.occuredAt = occuredAt;
+    public void setOccurredAt(LocalDateTime occurredAt) {
+        this.occurredAt = occurredAt;
     }
 
     public String getEvent() {
