@@ -69,7 +69,7 @@ public class Employee {
         this.dundieAwards = dundieAwards;
     }
 
-    public Integer getDundieAwards(){
+    public int getDundieAwards(){
         return dundieAwards;
     }
 }
