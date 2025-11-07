@@ -56,11 +56,11 @@ class AwardServiceFailedToCreateActivityIntegrationTest {
     }
 
     /**
-     * This test case, test the case where we:
-     * - Successfully giving awards to all users of the org
-     * - Successfully publishes the event
-     * - In the event listener fails to create an activity
-     * - Roll back the awards given by decrementing the awards
+     * In this test case we:
+     * - Successfully give awards to all users of the org
+     * - Successfully publish an event
+     * - The event listener fails to create an activity
+     * - We Roll back the awards given by decrementing the awards
      */
     @Test
     @Transactional

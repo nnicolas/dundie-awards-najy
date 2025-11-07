@@ -52,7 +52,7 @@ class AwardServiceSuccessIntegrationTest {
     }
 
     /**
-     * The SuccessPath test case where We:
+     * In this test case we:
      * - Successfully give awards to all users of the org
      * - Successfully publish the AwardsEvent
      * - Successfully create an Activity for AwardsGiven
