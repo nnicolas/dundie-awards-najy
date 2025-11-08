@@ -9,6 +9,9 @@ public class EmployeeMapper {
 
 
     public static EmployeeDto toDto(Employee employee) {
+        if(employee == null) {
+            return null;
+        }
         EmployeeDto employeeDto = new EmployeeDto();
         employeeDto.setId(employee.getId());
         employeeDto.setFirstName(employee.getFirstName());
@@ -19,6 +22,9 @@ public class EmployeeMapper {
     }
 
     public static Employee toEntity(EmployeeCreateDto employeeDto) {
+        if(employeeDto == null) {
+            return null;
+        }
         Employee employee = new Employee();
         employee.setFirstName(employeeDto.getFirstName());
         employee.setLastName(employeeDto.getLastName());
@@ -27,6 +33,9 @@ public class EmployeeMapper {
     }
 
     public static void applyUpdate(Employee employee, EmployeeUpdateDto updateDto) {
+        if(updateDto == null) {
+            throw  new IllegalArgumentException("Employee update dto is null");
+        }
         employee.setFirstName(updateDto.getFirstName());
         employee.setLastName(updateDto.getLastName());
     }
