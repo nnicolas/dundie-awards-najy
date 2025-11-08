@@ -48,6 +48,7 @@ public class AwardsServiceImpl implements AwardsService {
         return changedRows;
     }
 
+    @Transactional
     public int rollbackAwards(long organizationId) {
         return employeeRepository.decrementDundieAwardsForOrgEmployees(organizationId);
     }

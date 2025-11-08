@@ -6,7 +6,9 @@
     -  Changed `POST /employees`: to return `201 Created` and include a `Location` header pointing to `/employees/{id}` instead of only returning `200 OK`
     -  Changed `DELETE /employees/{id}`: to use `204 No Content` instead of returning a map with `{ "deleted": true }`.
 - Added `consumes = "application/json"` and `produces = "application/json"` on mappings for clarity.
-
+- When deleting an employee instead of:
+  - Changed `employeeRepository.findById(id)` to `employeeRepository.existsById(id)`
+  - Changed `employeeRepository.delete(employee)` to `employeeRepository.deleteById(id)`
 
 
 # Things I didn't change

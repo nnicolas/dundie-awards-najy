@@ -3,10 +3,12 @@ package com.ninjaone.dundie_awards.service.impl;
 import com.ninjaone.dundie_awards.dto.EmployeeDto;
 import com.ninjaone.dundie_awards.mapper.EmployeeMapper;
 import com.ninjaone.dundie_awards.model.Employee;
+import com.ninjaone.dundie_awards.model.Organization;
 import com.ninjaone.dundie_awards.repository.EmployeeRepository;
 import com.ninjaone.dundie_awards.repository.OrganizationRepository;
 import com.ninjaone.dundie_awards.service.EmployeeService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,45 +26,53 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<EmployeeDto> getAllEmployees() {
         List<Employee> employees = employeeRepository.findAll();
         return employees.stream().map(EmployeeMapper::toDto).collect(Collectors.toList());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<EmployeeDto> getEmployeeById(Long id) {
         return employeeRepository.findById(id).map(EmployeeMapper::toDto);
     }
 
     @Override
+    @Transactional
     public boolean deleteEmployeeById(Long id) {
-        Optional<Employee> employeeOpt = employeeRepository.findById(id);
-        if (employeeOpt.isEmpty()) {
+        if (!employeeRepository.existsById(id)) {
             return false;
         }
-        employeeRepository.delete(employeeOpt.get());
+        employeeRepository.deleteById(id);
         return true;
     }
 
     @Override
+    @Transactional
     public Optional<EmployeeDto> update(EmployeeDto employeeDto) {
-        Optional<Employee> optionalEmployeeDtoOpt = employeeRepository.findById(employeeDto.getId());
-        if (optionalEmployeeDtoOpt.isEmpty()) {
+        Optional<Employee> employeeOpt = employeeRepository.findById(employeeDto.getId());
+        if (employeeOpt.isEmpty()) {
             return Optional.empty();
         }
 
-        Employee employee = optionalEmployeeDtoOpt.get();
+        Employee employee = employeeOpt.get();
         employee.setFirstName(employeeDto.getFirstName());
         employee.setLastName(employeeDto.getLastName());
         return Optional.of(EmployeeMapper.toDto(employeeRepository.save(employee)));
     }
 
     @Override
+    @Transactional
     public EmployeeDto save(EmployeeDto employeeDto) {
+
+        Long orgId = employeeDto.getOrganization() != null ? employeeDto.getOrganization().getId() : null;
+        Organization org = organizationRepository.findById(orgId)
+                .orElseThrow(() -> new IllegalArgumentException("Organization not found: " + orgId));
+
         Employee employee = EmployeeMapper.toEntity(employeeDto);
         employee.setDundieAwards(0);
-        employee.setOrganization(organizationRepository.getReferenceById(employeeDto.getOrganization().getId()));
-        employee = employeeRepository.save(employee);
-        return EmployeeMapper.toDto(employee);
+        employee.setOrganization(org);
+        return EmployeeMapper.toDto(employeeRepository.save(employee));
     }
 }
