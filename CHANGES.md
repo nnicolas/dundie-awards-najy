@@ -3,7 +3,16 @@
 
 ### Config
 - The config file had 2 nested parent nodes `spring:` I removed one of them
-- 
+
+
+### Service Layer
+- Added a service layer and moved all the business logic from the controller to the service
+
+### DTOs & Validation
+- Added DTOs for all entities
+- Added separate DTOs for create and update in the case of Employee
+- Added validation on DTOs
+- Added db constraints on Entities
 
 ### Controllers Changes
 - Used `@RestController` instead of `@Controller` and removed method-level `@ResponseBody` in both `EmployeeController.java` and `AwardsController.java`
@@ -12,9 +21,6 @@
     -  Changed `DELETE /employees/{id}`: to use `204 No Content` instead of returning a map with `{ "deleted": true }`.
     -  Returning the proper HTTP codes
 - Added `consumes = "application/json"` and `produces = "application/json"` on mappings for clarity.
-
-### Service Layer
-- Added a service layer and moved all the business logic from the controller to the service
 
 ### Domain Changes
 - Changed `Employee.dundeeAwards` to `int` instead of `Integer` since we want it to initially be `0`
