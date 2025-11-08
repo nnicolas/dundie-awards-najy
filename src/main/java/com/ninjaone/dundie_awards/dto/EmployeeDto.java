@@ -13,6 +13,7 @@ public class EmployeeDto {
     @Size(min= Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "First Name must be between " + Constraints.NAME_MIN + " and " + Constraints.NAME_MAX + " characters")
     private String firstName;
 
+    @NotBlank
     @Size(min= Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "Last Name must be between " + Constraints.NAME_MIN + " and " + Constraints.NAME_MAX + " characters")
     private String lastName;
 
