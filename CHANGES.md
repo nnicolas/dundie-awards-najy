@@ -34,12 +34,22 @@
 - Added `equals` and `hashCode` to all entities
 
 ### Other
+- Enabled Actuator
+  - Added actuator dependency to `build.grale`
+  - Added actuator configurations to `application.yml`
+  - Actuator URLs:
+    - Base URL: http://localhost:3000/actuator
+    - Health check: http://localhost:3000/actuator/health
+    - Metrics: http://localhost:3000/actuator/metrics
+    - Environment info: http://localhost:3000/actuator/env
+    - Thread dump: http://localhost:3000/actuator/threaddump
+  
 - Enabled `OpenAPI Documenation` `http://localhost:3000/swagger-ui.html`
 - Used constructors to initialize dependencies instead of `@Autowired`
-- When deleting an employee instead of:
+- Added logging using native Java logging `import java.util.logging.Logger;` in production I would use `SLF4J` but I didn't want to include the library for this assignment 
+- When deleting an employee:
     - Changed `employeeRepository.findById(id)` to `employeeRepository.existsById(id)`
     - Changed `employeeRepository.delete(employee)` to `employeeRepository.deleteById(id)`
-- Added logging using native Java logging `import java.util.logging.Logger;` in production I would use `SLF4J` but I didn't want to include the library for this assignment 
 
 ### Things I didn't change
 Some changes I didn't make, since they might be out of scope for this assignment, but it is worth mentionting them.

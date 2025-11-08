@@ -4,6 +4,15 @@ springdoc:
 server:
   port: 3000
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+
 spring:
   h2:
     console:
