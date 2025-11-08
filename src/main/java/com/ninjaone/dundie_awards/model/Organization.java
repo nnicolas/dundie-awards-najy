@@ -38,4 +38,16 @@ public class Organization {
   public void setName(String name) {
     this.name = name;
   }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Organization org)) return false;
+        return id != 0 && id == org.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(id);
+    }
 }

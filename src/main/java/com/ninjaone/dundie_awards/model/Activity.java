@@ -52,4 +52,16 @@ public class Activity {
         this.event = event;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Activity activity)) return false;
+        return id != 0 && id == activity.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(id);
+    }
+
 }

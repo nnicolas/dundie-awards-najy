@@ -3,6 +3,8 @@ package com.ninjaone.dundie_awards.model;
 import com.ninjaone.dundie_awards.common.Constraints;
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "employees")
 public class Employee {
@@ -20,7 +22,7 @@ public class Employee {
     @Column(name = "dundie_awards", nullable = false)
     private int dundieAwards;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
     private Organization organization;
 
     public Employee() {
@@ -72,5 +74,17 @@ public class Employee {
 
     public int getDundieAwards(){
         return dundieAwards;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Employee e)) return false;
+        return id != 0 && id == e.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Long.hashCode(id);
     }
 }
