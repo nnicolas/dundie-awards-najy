@@ -4,16 +4,16 @@ import com.ninjaone.dundie_awards.dto.EmployeeDto;
 import com.ninjaone.dundie_awards.service.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.util.HashMap;
+import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
-@Controller
+@RestController
 @RequestMapping()
 public class EmployeeController {
 
@@ -24,30 +24,31 @@ public class EmployeeController {
     }
 
     // get all employees
-    @GetMapping("/employees")
-    @ResponseBody
+    @GetMapping(value = "/employees", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<EmployeeDto> getAllEmployees() {
         return employeeService.getAllEmployees();
     }
 
     // create employee rest api
-    @PostMapping("/employees")
-    @ResponseBody
-    public EmployeeDto createEmployee(@Valid @RequestBody EmployeeDto employeeDto) {
-        return employeeService.save(employeeDto);
+    @PostMapping(value = "/employees", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EmployeeDto> createEmployee(@Valid @RequestBody EmployeeDto employeeDto) {
+        EmployeeDto savedEmployee = employeeService.save(employeeDto);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(savedEmployee.getId())
+                .toUri();
+        return ResponseEntity.created(location).body(savedEmployee);
     }
 
     // get employee by id rest api
-    @GetMapping("/employees/{id}")
-    @ResponseBody
+    @GetMapping(value = "/employees/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EmployeeDto> getEmployeeById(@PathVariable Long id) {
         Optional<EmployeeDto> optionalEmployeeDtoOpt = employeeService.getEmployeeById(id);
         return optionalEmployeeDtoOpt.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 
     // update employee rest api
-    @PutMapping("/employees/{id}")
-    @ResponseBody
+    @PutMapping(value = "/employees/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<EmployeeDto> updateEmployee(@PathVariable Long id, @Valid @RequestBody EmployeeDto employeeDetails) {
         employeeDetails.setId(id);
         Optional<EmployeeDto> employeeDto = employeeService.update(employeeDetails);
@@ -55,16 +56,13 @@ public class EmployeeController {
     }
 
     // delete employee rest api
-    @DeleteMapping("/employees/{id}")
-    @ResponseBody
-    public ResponseEntity<Map<String, Boolean>> deleteEmployee(@PathVariable Long id) {
+    @DeleteMapping(value = "/employees/{id}")
+    public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
 
         if (!employeeService.deleteEmployeeById(id)) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
 
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("deleted", Boolean.TRUE);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.noContent().build(); // returns HTTP 204
     }
 }
