@@ -13,6 +13,7 @@
 - Added separate DTOs for create and update in the case of Employee
 - Added validation on DTOs
 - Added db constraints on Entities
+- Added `GlobalExceptionHandler` to provide consistent 400 validation error responses across all controllers
 
 ### Controllers Changes
 - Used `@RestController` instead of `@Controller` and removed method-level `@ResponseBody` in both `EmployeeController.java` and `AwardsController.java`
