@@ -7,7 +7,11 @@
 
 ### Service Layer
 - Added a service layer and moved all the business logic from the controller to the service
-
+- Added Services:
+  - `EmployeeService` interface and implementing class `EmployeeServiceImpl`
+  - `ActivityService` interface and implementing class `ActivityServiceImpl`
+  - `AwardsService` interface and implementing class `AwardsServiceImpl`
+  
 ### DTOs & Validation
 - Added DTOs for all entities
 - Added separate DTOs for get, create and update in the case of Employee due to different states that these end-points get/modify/create
@@ -30,6 +34,7 @@
 - Added `equals` and `hashCode` to all entities
 
 ### Other
+- Enabled `OpenAPI Documenation` `http://localhost:3000/swagger-ui.html`
 - Used constructors to initialize dependencies instead of `@Autowired`
 - When deleting an employee instead of:
     - Changed `employeeRepository.findById(id)` to `employeeRepository.existsById(id)`
@@ -38,6 +43,7 @@
 
 ### Things I didn't change
 Some changes I didn't make, since they might be out of scope for this assignment, but it is worth mentionting them.
+- I would add Unit and Integration tests
 - I didn't you this change in case you wanted to test against existing URLs
   - `@RequestMapping()` can be given a prefix, e.g. `@RequestMapping("/api")` 
   - We could add a version to the api e.g. `"/api/v1/employee`
