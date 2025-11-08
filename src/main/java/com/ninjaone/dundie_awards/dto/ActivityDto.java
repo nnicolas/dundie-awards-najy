@@ -12,11 +12,11 @@ public class ActivityDto {
 
     private long id;
 
-    @NotNull
+    @NotNull(message = "{validation.occurredAt.notNull}")
     private LocalDateTime occurredAt;
 
-    @NotBlank
-    @Size(min= Constraints.EVENT_DESC_MIN, max = Constraints.EVENT_DESC_MAX, message = "Event Description must be between " + Constraints.EVENT_DESC_MIN + " and " + Constraints.EVENT_DESC_MAX + " characters")
+    @NotBlank(message = "{validation.event.notBlank}")
+    @Size(min= Constraints.EVENT_DESC_MIN, max = Constraints.EVENT_DESC_MAX, message = "{validation.event.size}")
     private String event;
 
     public ActivityDto() {

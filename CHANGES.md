@@ -10,10 +10,11 @@
 
 ### DTOs & Validation
 - Added DTOs for all entities
-- Added separate DTOs for create and update in the case of Employee
+- Added separate DTOs for get, create and update in the case of Employee due to different states that these end-points get/modify/create
 - Added validation on DTOs
 - Added db constraints on Entities
 - Added `GlobalExceptionHandler` to provide consistent 400 validation error responses across all controllers
+- Standardized validation messages across DTOs and externalized them to `messages.properties` for i18n support
 
 ### Controllers Changes
 - Used `@RestController` instead of `@Controller` and removed method-level `@ResponseBody` in both `EmployeeController.java` and `AwardsController.java`

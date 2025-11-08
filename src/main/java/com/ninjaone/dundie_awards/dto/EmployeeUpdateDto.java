@@ -6,12 +6,12 @@ import jakarta.validation.constraints.Size;
 
 public class EmployeeUpdateDto {
 
-    @NotBlank
-    @Size(min = Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "First Name must be between " + Constraints.NAME_MIN + " and " + Constraints.NAME_MAX + " characters")
+    @NotBlank(message = "{validation.firstName.notBlank}")
+    @Size(min = Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "{validation.firstName.size}")
     private String firstName;
 
-    @NotBlank
-    @Size(min = Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "Last Name must be between " + Constraints.NAME_MIN + " and " + Constraints.NAME_MAX + " characters")
+    @NotBlank(message = "{validation.lastName.notBlank}")
+    @Size(min = Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "{validation.lastName.size}")
     private String lastName;
 
     public EmployeeUpdateDto() {

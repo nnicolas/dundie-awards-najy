@@ -9,8 +9,8 @@ public class OrganizationDto {
 
   private long id;
 
-  @NotBlank
-  @Size(min= Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "Organization Name must be between " + Constraints.NAME_MIN + " and " + Constraints.NAME_MAX + " characters")
+  @NotBlank(message = "{validation.organization.name.notBlank}")
+  @Size(min= Constraints.NAME_MIN, max = Constraints.NAME_MAX, message = "{validation.organization.name.size}")
   private String name;
 
   public OrganizationDto() {
