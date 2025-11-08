@@ -1,6 +1,8 @@
 package com.ninjaone.dundie_awards.controller;
 
+import com.ninjaone.dundie_awards.dto.EmployeeCreateDto;
 import com.ninjaone.dundie_awards.dto.EmployeeDto;
+import com.ninjaone.dundie_awards.dto.EmployeeUpdateDto;
 import com.ninjaone.dundie_awards.service.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -31,7 +33,7 @@ public class EmployeeController {
 
     // create employee rest api
     @PostMapping(value = "/employees", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EmployeeDto> createEmployee(@Valid @RequestBody EmployeeDto employeeDto) {
+    public ResponseEntity<EmployeeDto> createEmployee(@Valid @RequestBody EmployeeCreateDto employeeDto) {
         EmployeeDto savedEmployee = employeeService.save(employeeDto);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
@@ -49,9 +51,8 @@ public class EmployeeController {
 
     // update employee rest api
     @PutMapping(value = "/employees/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EmployeeDto> updateEmployee(@PathVariable Long id, @Valid @RequestBody EmployeeDto employeeDetails) {
-        employeeDetails.setId(id);
-        Optional<EmployeeDto> employeeDto = employeeService.update(employeeDetails);
+    public ResponseEntity<EmployeeDto> updateEmployee(@PathVariable Long id, @Valid @RequestBody EmployeeUpdateDto employeeDetails) {
+        Optional<EmployeeDto> employeeDto = employeeService.update(id, employeeDetails);
         return employeeDto.map(ResponseEntity::ok).orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
 

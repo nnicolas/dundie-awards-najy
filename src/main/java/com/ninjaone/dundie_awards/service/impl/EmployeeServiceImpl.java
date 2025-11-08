@@ -1,6 +1,8 @@
 package com.ninjaone.dundie_awards.service.impl;
 
+import com.ninjaone.dundie_awards.dto.EmployeeCreateDto;
 import com.ninjaone.dundie_awards.dto.EmployeeDto;
+import com.ninjaone.dundie_awards.dto.EmployeeUpdateDto;
 import com.ninjaone.dundie_awards.mapper.EmployeeMapper;
 import com.ninjaone.dundie_awards.model.Employee;
 import com.ninjaone.dundie_awards.model.Organization;
@@ -50,21 +52,20 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
-    public Optional<EmployeeDto> update(EmployeeDto employeeDto) {
-        Optional<Employee> employeeOpt = employeeRepository.findById(employeeDto.getId());
+    public Optional<EmployeeDto> update(Long id, EmployeeUpdateDto employeeDto) {
+        Optional<Employee> employeeOpt = employeeRepository.findById(id);
         if (employeeOpt.isEmpty()) {
             return Optional.empty();
         }
 
         Employee employee = employeeOpt.get();
-        employee.setFirstName(employeeDto.getFirstName());
-        employee.setLastName(employeeDto.getLastName());
+        EmployeeMapper.applyUpdate(employee, employeeDto);
         return Optional.of(EmployeeMapper.toDto(employeeRepository.save(employee)));
     }
 
     @Override
     @Transactional
-    public EmployeeDto save(EmployeeDto employeeDto) {
+    public EmployeeDto save(EmployeeCreateDto employeeDto) {
 
         Long orgId = employeeDto.getOrganization() != null ? employeeDto.getOrganization().getId() : null;
         Organization org = organizationRepository.findById(orgId)
