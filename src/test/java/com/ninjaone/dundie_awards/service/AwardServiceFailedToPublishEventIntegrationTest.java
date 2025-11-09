@@ -50,7 +50,7 @@ class AwardServiceFailedToPublishEventIntegrationTest {
      * In this test case we:
      * - Successfully give awards to all users of the org
      * - Fail to publish the event
-     * - Roll back the awards given. Rolled back automatically because giveAwards is @Transactional
+     * - The given awards are compensated (decremented)
      */
     @Test
     void testGiveAwards_failedToPublishEvent() {

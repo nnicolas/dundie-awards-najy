@@ -22,6 +22,11 @@ public class AwardsEventListener {
         this.awardsService = awardsService;
     }
 
+    /**
+     *  This method creates an activity for the Awards that have been given for an org.
+     *  If it fails to create an activity, it will call compensateAwards to decrement the awards that have been given.
+     *
+     */
     @Async
     @EventListener
     public void handleAwardsGivenToOrgMembers(AwardsEvent event) {

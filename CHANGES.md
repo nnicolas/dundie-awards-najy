@@ -19,28 +19,29 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
 ```
 
 
-- `AwardsService.giveAwards` is `@Transactional`. It:
+- `AwardsService.giveAwards`:
   - Increments awards for all employees in the organization via `employeeRepository.incrementDundieAwardsForOrgEmployees(...)`.
   - And publishes an event by calling: `publisher.publishEvent`. The event is handled asynchronously in the `AwardsEventListener` (using `@Async`).
-  - If `publishEvent` throws before the transaction completes, the transaction is rolled back, and no increments are committed.
+  - If `publishEvent` fails, `compensateAwards(...);` is called to compensate, decrement awards that have been given. 
   - End state:
     - Either all relevant `employee.dundieAwards` are incremented and the event is published, or
-    - Neither the event is published nor are `employee.dundieAwards` incremented (if an exception occurs before commit).
+    - Neither the event is published nor are `employee.dundieAwards` incremented
 
 ```java
-    @Transactional
     public int giveAwards(long organizationId) {
-        int changedRows;
+        Integer changedRows = null;
         try {
             changedRows = employeeRepository.incrementDundieAwardsForOrgEmployees(organizationId);
             publisher.publishEvent(new AwardsEvent(this, changedRows, organizationId));
             Logger.getGlobal().log(Level.INFO, String.format("Awards given and event published for organizationId: %d", organizationId));
+            return changedRows;
         } catch (Exception e) {
+            if(changedRows != null) {
+                this.compensateAwards(organizationId);
+            }
             Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit Awards for organizationId: %d", organizationId));
             throw new FailedToGiveAwardsException(e);
         }
-    
-        return changedRows;
     }
 ```
 
@@ -70,7 +71,7 @@ I added 3 integration tests for the award/rollback/compensate feature
 - `AwardServiceFailedToPublishEventIntegrationTest`
   - We increment Employee.dundieAwards successfully
   - We fail to publish the event. Using a mock to simulate failure.
-  - The increments are rolled back automatically as part of the `@Transactional` method
+  - We compensate by decrementing `Employee.dundieAwards` of the org by calling `awardsService.compensateAwards`
 - `AwardServiceFailedToCreateActivityIntegrationTest`
     - We increment Employee.dundieAwards successfully
     - We publish the event successfully

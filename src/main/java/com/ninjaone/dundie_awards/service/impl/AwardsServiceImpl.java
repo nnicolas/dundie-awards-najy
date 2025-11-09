@@ -6,7 +6,6 @@ import com.ninjaone.dundie_awards.repository.EmployeeRepository;
 import com.ninjaone.dundie_awards.service.AwardsService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,31 +23,29 @@ public class AwardsServiceImpl implements AwardsService {
 
     /**
      * Gives Dundee awards to all employees of a given organization and publishes an AwardsEvent.
-     * This method is Transactional:
-     *  - If publishing the AwardsEvent fails, the increment is rolled back
-     *  - A FailedToGiveAwardsException is thrown.
      * The AwardsEvent is handled asynchronously in the AwardsEventListener
+     * ------------
+     * If incrementDundieAwardsForOrgEmployees we will return without calling the compensateAwards
+     * If publishing the AwardsEvent fails, it will call compensateAwards to decrement the awards that have been given.
      *
-     * @param organizationId the ID of the organization whose employees will receive the awards
-     * @return the number of rows updated in the database, representing the number of employees who received awards
-     * @throws FailedToGiveAwardsException if the operation fails during execution
      */
-    @Transactional
     public int giveAwards(long organizationId) {
-        int changedRows;
+
+        Integer changedRows = null;
         try {
             changedRows = employeeRepository.incrementDundieAwardsForOrgEmployees(organizationId);
             publisher.publishEvent(new AwardsEvent(this, changedRows, organizationId));
             Logger.getGlobal().log(Level.INFO, String.format("Awards given and event published for organizationId: %d", organizationId));
+            return changedRows;
         } catch (Exception e) {
+            if(changedRows != null) {
+                this.compensateAwards(organizationId);
+            }
             Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit Awards for organizationId: %d", organizationId));
             throw new FailedToGiveAwardsException(e);
         }
-
-        return changedRows;
     }
 
-    @Transactional
     public int compensateAwards(long organizationId) {
         return employeeRepository.decrementDundieAwardsForOrgEmployees(organizationId);
     }
