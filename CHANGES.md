@@ -1,21 +1,75 @@
 # Implementing `/give-dundie-awards/{organizationId}` End-Point
 
-- I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsController`
+I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsController`
 - `AwardsController` calls `AwardsService.giveAwards`
-- `AwardsService.giveAwards` is a `@Transactional` method that:
-  - Increments `Employee.dundeeAwards` for all employees of the org by calling: `employeeRepository.incrementDundieAwardsForOrgEmployees`
-  - Publishes an event
-  - Increment and publish are atomic:
-    - All  `Employee.dundeeAwards` for the org are incremented and an event is published
-    - Or No employees are incremented and no event is published
+
+```java
+    @PostMapping(value = "/give-dundie-awards/{organizationId}" , produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<GiveAwardsResponse> giveDundieAwards(@PathVariable long organizationId) {
+        try {
+            int numAwards = awardsService.giveAwards(organizationId);
+            Logger.getGlobal().log(Level.INFO, String.format("Awards submitted for organizationId: %d", organizationId));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new GiveAwardsResponse(organizationId, numAwards));
+        } catch (Exception ex) {
+            Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit Awards for organizationId: %d", organizationId));
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+```
+
+
+- `AwardsService.giveAwards`:
+  - This method is `@Transactional`
+    - Increment awards for all org employees by calling: `employeeRepository.incrementDundieAwardsForOrgEmployees`
+    - And publishes an event by calling: `publisher.publishEvent`. The AwardsEvent is handled asynchronously in the `AwardsEventListener`
+  - If publishing the AwardsEvent fails, the increment is rolled back because the method is `@Transactional`
+  - The end-state after calling `AwardsService.giveAwards` is:
+    - All `employee.dundeeAwards` for the org are incremented by 1 and then event is published
+    - or No event is published and no `employee.dundeeAwards` are incremented
+
+```java
+    @Transactional
+    public int giveAwards(long organizationId) {
+        int changedRows;
+        try {
+            changedRows = employeeRepository.incrementDundieAwardsForOrgEmployees(organizationId);
+            publisher.publishEvent(new AwardsEvent(this, changedRows, organizationId));
+            Logger.getGlobal().log(Level.INFO, String.format("Awards given and event published for organizationId: %d", organizationId));
+        } catch (Exception e) {
+            Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit Awards for organizationId: %d", organizationId));
+            throw new FailedToGiveAwardsException(e);
+        }
+    
+        return changedRows;
+    }
+```
+
 - Event handler: `AwardsEventListener`
   - Creates an activity for the Award event
   - If the creation of the activity fails then the increment is rolled back by calling `awardsService.rollbackAwards` which decrements the `Employee.dundeeAwards` for all org employees
 
+```java
+    @EventListener
+    public void handleAwardsGivenToOrgMembers(AwardsEvent event) {
+        try {
+            Activity activity = activityService.createActivityForAwardsGiven(event.getOrganizationId(), event.getNumAwards());
+            Logger.getGlobal().log(Level.INFO, String.format("Activity created for awards given event %s", activity.getEvent()));
+        } catch (Exception e) {
+            int rolledBackAwards = awardsService.rollbackAwards(event.getOrganizationId());
+            Logger.getGlobal().log(Level.SEVERE, String.format("Error creating activity for orgId=%d. Rolled back %d awards. Details: %s %n", event.getOrganizationId(), rolledBackAwards, e.getMessage()), e);
+        }
+    }
+```
+
 - Notes
-  - In a production system I would use a message broker like `kafka` where we would try to process the event a couple of times before rolling back
-  - With the current code, if we fail to create an Activity and Fail to rollback we don't reprocess the message, and we are left in an inconsistent state. We have incremented the `dundeeAwards` but we didn't create an activity
-  - Edge case: If a user is added to the org between the time when we increment and then rollback so they are only rolled back they will end up having a negative dundeeAwards which would violate the db contraint @Min(0) and would result in not rolling back every employee
+  - In a production system I would use a message broker like `kafka` where we would try to process the event a couple of times before rolling back.
+  - We can try to repro
+  - I didn't use an external message broker for this assignment to keep things simple
+
+- Edge Cases:
+  - With the current code, if we fail to create an Activity and Fail to rollback we don't reprocess the message, and we are left in an inconsistent state. We have incremented the `dundeeAwards` but we didn't create an activity. 
+  - An employee could be added to the org between the time we increment and the the time we rollback, such that they are only rolled back they will end up having a negative dundeeAwards which would violate the db contraint @Min(0) and would result in not rolling back every employee
 
 # Code Improvements
 
