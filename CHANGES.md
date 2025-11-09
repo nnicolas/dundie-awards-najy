@@ -2,7 +2,7 @@
 
 ## Implementation Details
 I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsController`
-- `AwardsController` calls `AwardsService.giveAwards`
+- `AwardsController` calls `AwardsService.giveAwards`.
 
 ```java
     @PostMapping(value = "/give-dundie-awards/{organizationId}" , produces = MediaType.APPLICATION_JSON_VALUE)
@@ -10,10 +10,9 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
         try {
             int numAwards = awardsService.giveAwards(organizationId);
             Logger.getGlobal().log(Level.INFO, String.format("Awards submitted for organizationId: %d", organizationId));
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new GiveAwardsResponse(organizationId, numAwards));
+            return ResponseEntity.ok(new GiveAwardsResponse(organizationId, numAwards));
         } catch (Exception ex) {
-            Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit Awards for organizationId: %d", organizationId));
+            Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit awards for organizationId: %d", organizationId), ex);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -21,12 +20,12 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
 
 
 - `AwardsService.giveAwards` is `@Transactional`. It:
-  - Increments awards for all org employees by calling: `employeeRepository.incrementDundieAwardsForOrgEmployees`
-  - And publishes an event by calling: `publisher.publishEvent`. The event is handled asynchronously by `AwardsEventListener` (using `@Async`).
+  - Increments awards for all employees in the organization via `employeeRepository.incrementDundieAwardsForOrgEmployees(...)`.
+  - And publishes an event by calling: `publisher.publishEvent`. The event is handled asynchronously in the `AwardsEventListener` (using `@Async`).
   - If publishing the AwardsEvent fails, the increment is rolled back because the method is `@Transactional`
-  - The end-state after calling `AwardsService.giveAwards` is:
-    - All `employee.dundeeAwards` for the org are incremented by 1 and then event is published
-    - or No event is published and no `employee.dundeeAwards` are incremented
+  - End state:
+    - Either all relevant `employee.dundieAwards` are incremented and the event is published, or
+    - Neither the event is published nor are `employee.dundieAwards` incremented (if an exception occurs before commit).
 
 ```java
     @Transactional
@@ -97,7 +96,7 @@ We have incremented the `dundieAwards` but we didn't create an activity.
 ### Employees created between increment and rollback
 #### Problem
 - An employee could be added to the org between the time we increment and the time we rollback (decrement), such that the employee is decremented but not incremented. 
-- They will end up having a negative dundieAwards which would violate the DB constraint @Min(0) and would result in not rolling back all employees. Or if we remove the @Min(0) they will end up with a negative dundieAwards saved int he DB
+- They will end up with a negative `dundieAwards`, violating the `@Min(0)` constraint and preventing rollback from completing for all employees. If `@Min(0)` were removed, they would end up with a negative `dundieAwards` stored in the DB.
 
 #### Solution (One of many)
 We can solve this problem by adding a new DB table that would keep track of all employees that were part of the increment so that only these employees are rolled back.

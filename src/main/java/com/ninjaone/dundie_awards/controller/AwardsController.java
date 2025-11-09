@@ -26,10 +26,9 @@ public class AwardsController {
         try {
             int numAwards = awardsService.giveAwards(organizationId);
             Logger.getGlobal().log(Level.INFO, String.format("Awards submitted for organizationId: %d", organizationId));
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new GiveAwardsResponse(organizationId, numAwards));
+            return ResponseEntity.ok(new GiveAwardsResponse(organizationId, numAwards));
         } catch (Exception ex) {
-            Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit Awards for organizationId: %d", organizationId));
+            Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit awards for organizationId: %d", organizationId), ex);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
