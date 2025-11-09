@@ -59,7 +59,7 @@ class AwardServiceFailedToCreateActivityIntegrationTest {
      * - Successfully give awards to all users of the org
      * - Successfully publish an event
      * - The event listener fails to create an activity
-     * - We Roll back the awards given by decrementing the awards
+     * - We Compensate by decrementing the awards
      */
     @Test
     void testGiveAwards_failedToCreateActivity() {
@@ -73,9 +73,7 @@ class AwardServiceFailedToCreateActivityIntegrationTest {
         assertEquals(NUMBER_OF_EMPLOYEES, result);
 
         // Then
-        // all employees of the org updated
-
-        // Verify DB changes rolled back
+        // Verify we compensated for the awards that were originally incremented
         boolean anyAwarded = employeeRepository.findAll().stream().anyMatch(e -> (e.getOrganization().getId() == organization.getId() && e.getDundieAwards() == 1));
         assertFalse(anyAwarded, "Transaction should have rolled back updates");
 

@@ -49,37 +49,38 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
   - If activity creation fails, it calls `awardsService.compensateAwards` to compensate by decrementing `Employee.dundieAwards` for the organization. This is a compensating action, not a rollback of the original transaction.
 
 ```java
+    @Async
     @EventListener
     public void handleAwardsGivenToOrgMembers(AwardsEvent event) {
         try {
             Activity activity = activityService.createActivityForAwardsGiven(event.getOrganizationId(), event.getNumAwards());
             Logger.getGlobal().log(Level.INFO, String.format("Activity created for awards given event %s", activity.getEvent()));
         } catch (Exception e) {
-            int rolledBackAwards = awardsService.compensateAwards(event.getOrganizationId());
-            Logger.getGlobal().log(Level.SEVERE, String.format("Error creating activity for orgId=%d. Rolled back %d awards. Details: %s %n", event.getOrganizationId(), rolledBackAwards, e.getMessage()), e);
+            int compensatedAwards = awardsService.compensateAwards(event.getOrganizationId());
+            Logger.getGlobal().log(Level.SEVERE, String.format("Error creating activity for orgId=%d. Compensating %d awards. Details: %s %n", event.getOrganizationId(), compensatedAwards, e.getMessage()), e);
         }
     }
 ```
 ## Integration Tests
 I added 3 integration tests for the award/rollback/compensate feature
 - `AwardServiceSuccessIntegrationTest` The happy path where:
-  - We increment Employee.dundeeAward successfully
+  - We increment Employee.dundieAwards successfully
   - We publish the event successfully
   - We save the activity successfully in the event handler
 - `AwardServiceFailedToPublishEventIntegrationTest`
-  - We increment Employee.dundeeAward successfully
+  - We increment Employee.dundieAwards successfully
   - We fail to publish the event. Using a mock to simulate failure.
   - The increments are rolled back automatically as part of the `@Transactional` method
 - `AwardServiceFailedToCreateActivityIntegrationTest`
-    - We increment Employee.dundeeAward successfully
+    - We increment Employee.dundieAwards successfully
     - We publish the event successfully
     - We fail to save the Activity
-    - We compensate by decrementing `Employee.dundeeAward` of the org by calling `awardsService.compensateAwards`
+    - We compensate by decrementing `Employee.dundieAwards` of the org by calling `awardsService.compensateAwards`
 
 
 ## Notes
 I didn't use an external message broker for this assignment to keep things simple.
-In a production system I would use a message broker like `Kafka` where we would try to re-process the event before rolling back / compensating.
+In a production system I would use a message broker like `Kafka` where we would try to re-process the event before compensating given awards.
 Using `Kafka` would make sure that the message is processed or put on a `DLQ` after failed reprocessing attempts
   
 
