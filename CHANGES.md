@@ -1,5 +1,6 @@
 # Implementing `/give-dundie-awards/{organizationId}` End-Point
 
+## Implementation Details
 I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsController`
 - `AwardsController` calls `AwardsService.giveAwards`
 
@@ -19,10 +20,9 @@ I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsC
 ```
 
 
-- `AwardsService.giveAwards`:
-  - This method is `@Transactional`
-    - Increment awards for all org employees by calling: `employeeRepository.incrementDundieAwardsForOrgEmployees`
-    - And publishes an event by calling: `publisher.publishEvent`. The AwardsEvent is handled asynchronously in the `AwardsEventListener`
+- `AwardsService.giveAwards`, This method is `@Transactional`, it:
+  - Increment awards for all org employees by calling: `employeeRepository.incrementDundieAwardsForOrgEmployees`
+  - And publishes an event by calling: `publisher.publishEvent`. The AwardsEvent is handled asynchronously in the `AwardsEventListener`
   - If publishing the AwardsEvent fails, the increment is rolled back because the method is `@Transactional`
   - The end-state after calling `AwardsService.giveAwards` is:
     - All `employee.dundeeAwards` for the org are incremented by 1 and then event is published
@@ -47,7 +47,7 @@ I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsC
 
 - Event handler: `AwardsEventListener`
   - Creates an activity for the Award event
-  - If the creation of the activity fails then the increment is rolled back by calling `awardsService.rollbackAwards` which decrements the `Employee.dundeeAwards` for all org employees
+  - If the creation of the activity fails, the increment is rolled back by calling `awardsService.rollbackAwards` which decrements the `Employee.dundeeAwards` for all org employees
 
 ```java
     @EventListener
@@ -61,15 +61,47 @@ I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsC
         }
     }
 ```
+## Integration Tests
+I added 3 integration tests for the award/rollback feature
+- `AwardServiceSuccessIntegrationTest` The happy path where:
+  - We increment Employee.dundeeAward successfully
+  - We publish the event successfully
+  - We save the activity successfully in the event handler
+- `AwardServiceFailedToPublishEventIntegrationTest`
+  - We increment Employee.dundeeAward successfully
+  - We fail to publish the event
+  - The increments are rolled back automatically part of the `@Transactional`
+- `AwardServiceFailedToCreateActivityIntegrationTest`
+    - We increment Employee.dundeeAward successfully
+    - We publish the event successfully
+    - We fail to save the Activity
+    - We rollback by decrementing Employee.dundeeAward of the org
 
-- Notes
-  - In a production system I would use a message broker like `kafka` where we would try to process the event a couple of times before rolling back.
-  - We can try to repro
-  - I didn't use an external message broker for this assignment to keep things simple
 
-- Edge Cases:
-  - With the current code, if we fail to create an Activity and Fail to rollback we don't reprocess the message, and we are left in an inconsistent state. We have incremented the `dundeeAwards` but we didn't create an activity. 
-  - An employee could be added to the org between the time we increment and the the time we rollback, such that they are only rolled back they will end up having a negative dundeeAwards which would violate the db contraint @Min(0) and would result in not rolling back every employee
+## Notes
+I didn't use an external message broker for this assignment to keep things simple.
+In a production system I would use a message broker like `kafka` where we would try to re-process the event before rolling back.
+Using kafka would make sure that the message is processed or put on a `DLQ` after failed reprocessing attempts
+  
+
+## Limitations of this solution:
+
+### Events are lost if the server crashes
+If the server crashes before the message is processed, the message is lost. That's why an external message broker like `kafka` would be a good choice here.
+
+### Inconsistent state if we fail to rollback
+With the current implementation, if we fail to create an Activity and fail to rollback, we don't reprocess the message, and we are left in an inconsistent state. 
+
+We have incremented the `dundeeAwards` but we didn't create an activity.
+
+### Employees created between increment and rollback
+#### Problem
+- An employee could be added to the org between the time we increment and the time we rollback (decrement), such that the employee is decremented but not incremented. 
+- They will end up having a negative dundeeAwards which would violate the db constraint @Min(0) and would result in not rolling back all employees. Or if we remove the @Min(0) they will endup with a negative dundeeAwards saved int he DB
+
+#### Solution (One of many)
+We can solve this problem by adding a new db table that would keep track of all employees that were part of the increment so that only these employees are rolled back.
+
 
 # Code Improvements
 
