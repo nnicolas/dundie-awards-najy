@@ -2,6 +2,7 @@ package com.ninjaone.dundie_awards.model;
 
 import com.ninjaone.dundie_awards.common.Constraints;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 
 import java.util.Objects;
 
@@ -19,6 +20,7 @@ public class Employee {
     @Column(name = "last_name", nullable = false, length = Constraints.NAME_MAX)
     private String lastName;
 
+    @Min(0)
     @Column(name = "dundie_awards", nullable = false)
     private int dundieAwards;
 

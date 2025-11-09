@@ -1,5 +1,23 @@
+# Implementing `/give-dundie-awards/{organizationId}` End-Point
 
-# Changes
+- I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsController`
+- `AwardsController` calls `AwardsService.giveAwards`
+- `AwardsService.giveAwards` is a `@Transactional` method that:
+  - Increments `Employee.dundeeAwards` for all employees of the org by calling: `employeeRepository.incrementDundieAwardsForOrgEmployees`
+  - Publishes an event
+  - Increment and publish are atomic:
+    - All  `Employee.dundeeAwards` for the org are incremented and an event is published
+    - Or No employees are incremented and no event is published
+- Event handler: `AwardsEventListener`
+  - Creates an activity for the Award event
+  - If the creation of the activity fails then the increment is rolled back by calling `awardsService.rollbackAwards` which decrements the `Employee.dundeeAwards` for all org employees
+
+- Notes
+  - In a production system I would use a message broker like `kafka` where we would try to process the event a couple of times before rolling back
+  - With the current code, if we fail to create an Activity and Fail to rollback we don't reprocess the message, and we are left in an inconsistent state. We have incremented the `dundeeAwards` but we didn't create an activity
+  - Edge case: If a user is added to the org between the time when we increment and then rollback so they are only rolled back they will end up having a negative dundeeAwards which would violate the db contraint @Min(0) and would result in not rolling back every employee
+
+# Code Improvements
 
 ### Config
 - The config file had 2 nested parent nodes `spring:` I removed one of them
