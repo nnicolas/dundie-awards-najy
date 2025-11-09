@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -58,13 +57,9 @@ class AwardServiceSuccessIntegrationTest {
      * - Successfully create an Activity for AwardsGiven
      **/
     @Test
-    @Transactional
     void testGiveAwards_success() throws FailedToGiveAwardsException {
         // When
         int result = awardService.giveAwards(organization.getId());
-
-        entityManager.flush();
-        entityManager.clear();
 
         // Then
         // all employees of the org updated
