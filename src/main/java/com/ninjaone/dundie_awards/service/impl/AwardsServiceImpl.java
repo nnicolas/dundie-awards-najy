@@ -49,7 +49,7 @@ public class AwardsServiceImpl implements AwardsService {
     }
 
     @Transactional
-    public int rollbackAwards(long organizationId) {
+    public int compensateAwards(long organizationId) {
         return employeeRepository.decrementDundieAwardsForOrgEmployees(organizationId);
     }
 }

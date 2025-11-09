@@ -29,7 +29,7 @@ public class AwardsEventListener {
             Activity activity = activityService.createActivityForAwardsGiven(event.getOrganizationId(), event.getNumAwards());
             Logger.getGlobal().log(Level.INFO, String.format("Activity created for awards given event %s", activity.getEvent()));
         } catch (Exception e) {
-            int rolledBackAwards = awardsService.rollbackAwards(event.getOrganizationId());
+            int rolledBackAwards = awardsService.compensateAwards(event.getOrganizationId());
             Logger.getGlobal().log(Level.SEVERE, String.format("Error creating activity for orgId=%d. Rolled back %d awards. Details: %s %n", event.getOrganizationId(), rolledBackAwards, e.getMessage()), e);
         }
     }

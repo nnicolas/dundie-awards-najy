@@ -22,7 +22,7 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
 - `AwardsService.giveAwards` is `@Transactional`. It:
   - Increments awards for all employees in the organization via `employeeRepository.incrementDundieAwardsForOrgEmployees(...)`.
   - And publishes an event by calling: `publisher.publishEvent`. The event is handled asynchronously in the `AwardsEventListener` (using `@Async`).
-  - If publishing the AwardsEvent fails, the increment is rolled back because the method is `@Transactional`
+  - If `publishEvent` throws before the transaction completes, the transaction is rolled back, and no increments are committed.
   - End state:
     - Either all relevant `employee.dundieAwards` are incremented and the event is published, or
     - Neither the event is published nor are `employee.dundieAwards` incremented (if an exception occurs before commit).
@@ -46,7 +46,7 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
 
 - Event handler: `AwardsEventListener`
   - Creates an activity for the Award event
-  - If the creation of the activity fails, the increment is rolled back by calling `awardsService.rollbackAwards` which decrements the `Employee.dundeeAwards` for all org employees
+  - If activity creation fails, it calls `awardsService.compensateAwards` to compensate by decrementing `Employee.dundieAwards` for the organization. This is a compensating action, not a rollback of the original transaction.
 
 ```java
     @EventListener
@@ -55,13 +55,13 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
             Activity activity = activityService.createActivityForAwardsGiven(event.getOrganizationId(), event.getNumAwards());
             Logger.getGlobal().log(Level.INFO, String.format("Activity created for awards given event %s", activity.getEvent()));
         } catch (Exception e) {
-            int rolledBackAwards = awardsService.rollbackAwards(event.getOrganizationId());
+            int rolledBackAwards = awardsService.compensateAwards(event.getOrganizationId());
             Logger.getGlobal().log(Level.SEVERE, String.format("Error creating activity for orgId=%d. Rolled back %d awards. Details: %s %n", event.getOrganizationId(), rolledBackAwards, e.getMessage()), e);
         }
     }
 ```
 ## Integration Tests
-I added 3 integration tests for the award/rollback feature
+I added 3 integration tests for the award/rollback/compensate feature
 - `AwardServiceSuccessIntegrationTest` The happy path where:
   - We increment Employee.dundeeAward successfully
   - We publish the event successfully
@@ -74,12 +74,12 @@ I added 3 integration tests for the award/rollback feature
     - We increment Employee.dundeeAward successfully
     - We publish the event successfully
     - We fail to save the Activity
-    - We rollback by decrementing Employee.dundeeAward of the org
+    - We compensate by decrementing `Employee.dundeeAward` of the org by calling `awardsService.compensateAwards`
 
 
 ## Notes
 I didn't use an external message broker for this assignment to keep things simple.
-In a production system I would use a message broker like `Kafka` where we would try to re-process the event before rolling back.
+In a production system I would use a message broker like `Kafka` where we would try to re-process the event before rolling back / compensating.
 Using `Kafka` would make sure that the message is processed or put on a `DLQ` after failed reprocessing attempts
   
 
@@ -88,18 +88,18 @@ Using `Kafka` would make sure that the message is processed or put on a `DLQ` af
 ### Events are lost if the server crashes
 If the server crashes before the message is processed, the message is lost. That's why an external message broker like `Kafka` would be a good choice here.
 
-### Inconsistent state if we fail to rollback
-With the current implementation, if we fail to create an Activity and fail to rollback, we don't reprocess the message, and we are left in an inconsistent state. 
+### Inconsistent state if we fail to compensate
+With the current implementation, if we fail to create an Activity and fail to compensate the awards, we don't reprocess the message, and we are left in an inconsistent state. 
 
 We have incremented the `dundieAwards` but we didn't create an activity.
 
-### Employees created between increment and rollback
+### Employees created between increment and compensate
 #### Problem
-- An employee could be added to the org between the time we increment and the time we rollback (decrement), such that the employee is decremented but not incremented. 
-- They will end up with a negative `dundieAwards`, violating the `@Min(0)` constraint and preventing rollback from completing for all employees. If `@Min(0)` were removed, they would end up with a negative `dundieAwards` stored in the DB.
+- An employee could be added to the org between the time we increment and the time we compensate (decrement), such that the employee is decremented but not incremented. 
+- They will end up with a negative `dundieAwards`, violating the `@Min(0)` constraint and preventing compensating from completing for all employees. If `@Min(0)` were removed, they would end up with a negative `dundieAwards` stored in the DB.
 
 #### Solution (One of many)
-We can solve this problem by adding a new DB table that would keep track of all employees that were part of the increment so that only these employees are rolled back.
+We can solve this problem by adding a new DB table that would keep track of all employees that were part of the increment so that only these employees are compensated.
 
 
 # Code Improvements
