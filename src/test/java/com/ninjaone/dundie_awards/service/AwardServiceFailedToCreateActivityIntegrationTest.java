@@ -63,7 +63,6 @@ class AwardServiceFailedToCreateActivityIntegrationTest {
      * - We Roll back the awards given by decrementing the awards
      */
     @Test
-    @Transactional
     void testGiveAwards_failedToCreateActivity() {
         doThrow(new RuntimeException("Create Activity Failed"))
                 .when(activityService)
@@ -73,9 +72,6 @@ class AwardServiceFailedToCreateActivityIntegrationTest {
         int result = awardService.giveAwards(organization.getId());
 
         assertEquals(NUMBER_OF_EMPLOYEES, result);
-
-        entityManager.flush();
-        entityManager.clear();
 
         // Then
         // all employees of the org updated
