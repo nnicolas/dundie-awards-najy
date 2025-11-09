@@ -5,6 +5,7 @@ import com.ninjaone.dundie_awards.model.Activity;
 import com.ninjaone.dundie_awards.service.ActivityService;
 import com.ninjaone.dundie_awards.service.AwardsService;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import java.util.logging.Level;
@@ -21,6 +22,7 @@ public class AwardsEventListener {
         this.awardsService = awardsService;
     }
 
+    @Async
     @EventListener
     public void handleAwardsGivenToOrgMembers(AwardsEvent event) {
         try {

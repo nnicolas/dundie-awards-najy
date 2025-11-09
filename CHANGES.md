@@ -1,7 +1,7 @@
-# Implementing `/give-dundie-awards/{organizationId}` End-Point
+# Implementing `/give-dundie-awards/{organizationId}` endpoint
 
 ## Implementation Details
-I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsController`
+I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsController`
 - `AwardsController` calls `AwardsService.giveAwards`
 
 ```java
@@ -20,9 +20,9 @@ I have implemented `/give-dundie-awards/{organizationId}` end-point in: `AwardsC
 ```
 
 
-- `AwardsService.giveAwards`, This method is `@Transactional`, it:
-  - Increment awards for all org employees by calling: `employeeRepository.incrementDundieAwardsForOrgEmployees`
-  - And publishes an event by calling: `publisher.publishEvent`. The AwardsEvent is handled asynchronously in the `AwardsEventListener`
+- `AwardsService.giveAwards` is `@Transactional`. It:
+  - Increments awards for all org employees by calling: `employeeRepository.incrementDundieAwardsForOrgEmployees`
+  - And publishes an event by calling: `publisher.publishEvent`. The event is handled asynchronously by `AwardsEventListener` (using `@Async`).
   - If publishing the AwardsEvent fails, the increment is rolled back because the method is `@Transactional`
   - The end-state after calling `AwardsService.giveAwards` is:
     - All `employee.dundeeAwards` for the org are incremented by 1 and then event is published
@@ -69,8 +69,8 @@ I added 3 integration tests for the award/rollback feature
   - We save the activity successfully in the event handler
 - `AwardServiceFailedToPublishEventIntegrationTest`
   - We increment Employee.dundeeAward successfully
-  - We fail to publish the event
-  - The increments are rolled back automatically part of the `@Transactional`
+  - We fail to publish the event. Using a mock to simulate failure.
+  - The increments are rolled back automatically as part of the `@Transactional` method
 - `AwardServiceFailedToCreateActivityIntegrationTest`
     - We increment Employee.dundeeAward successfully
     - We publish the event successfully
@@ -80,33 +80,33 @@ I added 3 integration tests for the award/rollback feature
 
 ## Notes
 I didn't use an external message broker for this assignment to keep things simple.
-In a production system I would use a message broker like `kafka` where we would try to re-process the event before rolling back.
-Using kafka would make sure that the message is processed or put on a `DLQ` after failed reprocessing attempts
+In a production system I would use a message broker like `Kafka` where we would try to re-process the event before rolling back.
+Using `Kafka` would make sure that the message is processed or put on a `DLQ` after failed reprocessing attempts
   
 
 ## Limitations of this solution:
 
 ### Events are lost if the server crashes
-If the server crashes before the message is processed, the message is lost. That's why an external message broker like `kafka` would be a good choice here.
+If the server crashes before the message is processed, the message is lost. That's why an external message broker like `Kafka` would be a good choice here.
 
 ### Inconsistent state if we fail to rollback
 With the current implementation, if we fail to create an Activity and fail to rollback, we don't reprocess the message, and we are left in an inconsistent state. 
 
-We have incremented the `dundeeAwards` but we didn't create an activity.
+We have incremented the `dundieAwards` but we didn't create an activity.
 
 ### Employees created between increment and rollback
 #### Problem
 - An employee could be added to the org between the time we increment and the time we rollback (decrement), such that the employee is decremented but not incremented. 
-- They will end up having a negative dundeeAwards which would violate the db constraint @Min(0) and would result in not rolling back all employees. Or if we remove the @Min(0) they will endup with a negative dundeeAwards saved int he DB
+- They will end up having a negative dundieAwards which would violate the DB constraint @Min(0) and would result in not rolling back all employees. Or if we remove the @Min(0) they will end up with a negative dundieAwards saved int he DB
 
 #### Solution (One of many)
-We can solve this problem by adding a new db table that would keep track of all employees that were part of the increment so that only these employees are rolled back.
+We can solve this problem by adding a new DB table that would keep track of all employees that were part of the increment so that only these employees are rolled back.
 
 
 # Code Improvements
 
 ### Config
-- The config file had 2 nested parent nodes `spring:` I removed one of them
+- The config file had two nested `spring:` parent nodes; I removed one.
 
 
 ### Service Layer
@@ -118,28 +118,28 @@ We can solve this problem by adding a new db table that would keep track of all 
   
 ### DTOs & Validation
 - Added DTOs for all entities
-- Added separate DTOs for get, create and update in the case of Employee due to different states that these end-points get/modify/create
+- Added separate DTOs for get, create and update in the case of Employee due to different states that these endpoints get/modify/create
 - Added validation on DTOs
-- Added db constraints on Entities
+- Added DB constraints on Entities
 - Added `GlobalExceptionHandler` to provide consistent 400 validation error responses across all controllers
 - Standardized validation messages across DTOs and externalized them to `messages.properties` for i18n support
 
-### Controllers Changes
+### Controller Changes
 - Used `@RestController` instead of `@Controller` and removed method-level `@ResponseBody` in both `EmployeeController.java` and `AwardsController.java`
-- Using proper HTTP semantics
+- Used proper HTTP semantics
     -  Changed `POST /employees`: to return `201 Created` and include a `Location` header pointing to `/employees/{id}` instead of only returning `200 OK`
     -  Changed `DELETE /employees/{id}`: to use `204 No Content` instead of returning a map with `{ "deleted": true }`.
-    -  Returning the proper HTTP codes
+    -  Return appropriate HTTP status codes.
 - Added `consumes = "application/json"` and `produces = "application/json"` on mappings for clarity.
 
 ### Domain Changes
-- Changed `Employee.dundeeAwards` to `int` instead of `Integer` since we want it to initially be `0`
+- Changed `Employee.dundieAwards` to `int` instead of `Integer` since we want it to initially be `0`
 - Changed `Employee.organization` to `FetchType.LAZY`, it had a default `FetchType.EAGER`. EAGER on many-to-one is common but can cause N+1 queries when listing employees.
-- Added `equals` and `hashCode` to all entities
+- Added `equals` and `hashCode` to all entities.
 
 ### Other
 - Enabled Actuator
-  - Added actuator dependency to `build.grale`
+  - Added actuator dependency to `build.gradle`
   - Added actuator configurations to `application.yml`
   - Actuator URLs:
     - Base URL: http://localhost:3000/actuator
@@ -148,17 +148,17 @@ We can solve this problem by adding a new db table that would keep track of all 
     - Environment info: http://localhost:3000/actuator/env
     - Thread dump: http://localhost:3000/actuator/threaddump
   
-- Enabled `OpenAPI Documenation` `http://localhost:3000/swagger-ui.html`
+- Enabled OpenAPI Documentation at `http://localhost:PORT/swagger-ui.html`
 - Used constructors to initialize dependencies instead of `@Autowired`
-- Added logging using native Java logging `import java.util.logging.Logger;` in production I would use `SLF4J` but I didn't want to include the library for this assignment 
+- Added logging using native Java logging `import java.util.logging.Logger;` In production, I would use SLF4J. I avoided adding the dependency for this assignment. 
 - When deleting an employee:
     - Changed `employeeRepository.findById(id)` to `employeeRepository.existsById(id)`
     - Changed `employeeRepository.delete(employee)` to `employeeRepository.deleteById(id)`
 
 ### Things I didn't change
-Some changes I didn't make, since they might be out of scope for this assignment, but it is worth mentionting them.
-- I would add Unit and Integration tests
-- I didn't you this change in case you wanted to test against existing URLs
+Some changes I didn't make, since they might be out of scope for this assignment, but it is worth mentioning them.
+- I would add more unit and integration tests.
+- I didn’t make this change in case you wanted to test against existing URLs
   - `@RequestMapping()` can be given a prefix, e.g. `@RequestMapping("/api")` 
-  - We could add a version to the api e.g. `"/api/v1/employee`
-- Adding `pagination` to end-points that get all employees and all activities  
+  - We could add a version to the api e.g. `/api/v1/employee`
+- Adding `pagination` to endpoints that get all employees and all activities  
