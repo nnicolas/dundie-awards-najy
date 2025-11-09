@@ -22,10 +22,13 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
 - `AwardsService.giveAwards`:
   - Increments awards for all employees in the organization via `employeeRepository.incrementDundieAwardsForOrgEmployees(...)`.
   - And publishes an event by calling: `publisher.publishEvent`. The event is handled asynchronously in the `AwardsEventListener` (using `@Async`).
-  - If `publishEvent` fails, `compensateAwards(...);` is called to compensate, decrement awards that have been given. 
-  - End state:
-    - Either all relevant `employee.dundieAwards` are incremented and the event is published, or
-    - Neither the event is published nor are `employee.dundieAwards` incremented
+  - If `publishEvent` fails, `compensateAwards(...);` is called to compensate, decrement awards that have been given.
+    - Note: We perform compensation (a separate operation that semantically undoes prior work) rather than a database rollback. A rollback would require the increment and event publish to be part of a single atomic transaction boundary; that is not the case here.
+  - Intended end state (assuming compensation succeeds):
+    - Either all relevant employee.dundieAwards are incremented and the event is published, or 
+    - The event is not published and the prior increments are compensated (decremented). 
+    - Note: If compensation itself fails, a partially updated state is possible.
+
 
 ```java
     public int giveAwards(long organizationId) {
@@ -63,7 +66,7 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
     }
 ```
 ## Integration Tests
-I added 3 integration tests for the award/rollback/compensate feature
+I added 3 integration tests for the award/compensate feature
 - `AwardServiceSuccessIntegrationTest` The happy path where:
   - We increment Employee.dundieAwards successfully
   - We publish the event successfully
