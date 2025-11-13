@@ -90,6 +90,28 @@ public class AwardsServiceImplTest {
     }
 
     @Test
+    void giveAwards_cacheIncrementFails_compensatesDbOnly_andThrows() {
+        long orgId = 11L;
+        int changedRows = 4;
+        when(employeeRepository.incrementDundieAwardsForOrgEmployees(orgId)).thenReturn(changedRows);
+        doThrow(new RuntimeException("cache fail")).when(awardsCacheService).incrementAllForOrg(orgId);
+        when(employeeRepository.decrementDundieAwardsForOrgEmployees(orgId)).thenReturn(changedRows);
+
+        assertThatThrownBy(() -> awardsService.giveAwards(orgId))
+                .isInstanceOf(FailedToGiveAwardsException.class);
+
+        // DB increment happened
+        verify(employeeRepository).incrementDundieAwardsForOrgEmployees(orgId);
+        // Cache increment attempted and failed
+        verify(awardsCacheService).incrementAllForOrg(orgId);
+        // Compensation inside updateDbAndCache: only DB is compensated
+        verify(employeeRepository).decrementDundieAwardsForOrgEmployees(orgId);
+        verify(awardsCacheService, never()).decrementAllForOrg(anyLong());
+        // No event should be published since updateDbAndCache didn't succeed
+        verify(publisher, never()).publishEvent(any());
+    }
+
+    @Test
     void compensateAwards_decrementsRepoAndCache_andReturnsRows() {
         long orgId = 3L;
         when(employeeRepository.decrementDundieAwardsForOrgEmployees(orgId)).thenReturn(4);
