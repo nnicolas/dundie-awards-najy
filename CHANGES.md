@@ -48,11 +48,11 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
 ## Integration Tests
 I added 2 integration tests for the award/compensate feature
 - `AwardServiceSuccessIntegrationTest` The happy path where:
-  - We increment Employee.dundieAwards successfully
+  - We increment Employee.dundieAwards successfully in both DB and cache
   - We publish the event successfully
   - We save the activity successfully in the event handler
 - `AwardServiceFailedToPublishEventIntegrationTest`
-  - We increment Employee.dundieAwards successfully
+  - We increment Employee.dundieAwards successfully in both DB and cache
   - We fail to publish the event. Using a mock to simulate failure.
   - We compensate by decrementing `Employee.dundieAwards` of the org by calling `awardsService.compensateAwards`
 
