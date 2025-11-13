@@ -75,11 +75,6 @@ I added 3 integration tests for the award/compensate feature
   - We increment Employee.dundieAwards successfully
   - We fail to publish the event. Using a mock to simulate failure.
   - We compensate by decrementing `Employee.dundieAwards` of the org by calling `awardsService.compensateAwards`
-- `AwardServiceFailedToCreateActivityIntegrationTest`
-    - We increment Employee.dundieAwards successfully
-    - We publish the event successfully
-    - We fail to save the Activity
-    - We compensate by decrementing `Employee.dundieAwards` of the org by calling `awardsService.compensateAwards`
 
 
 ## Notes
