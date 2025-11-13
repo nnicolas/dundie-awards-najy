@@ -4,5 +4,5 @@ public interface AwardsService {
 
     int giveAwards(long organizationId);
 
-    int compensateAwards(long organizationId);
+    int compensateAwardsInDbAndCache(long organizationId);
 }

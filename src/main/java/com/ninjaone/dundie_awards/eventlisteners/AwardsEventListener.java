@@ -34,7 +34,7 @@ public class AwardsEventListener {
             Activity activity = activityService.createActivityForAwardsGiven(event.getOrganizationId(), event.getNumAwards());
             Logger.getGlobal().log(Level.INFO, String.format("Activity created for awards given event %s", activity.getEvent()));
         } catch (Exception e) {
-            int compensatedAwards = awardsService.compensateAwards(event.getOrganizationId());
+            int compensatedAwards = awardsService.compensateAwardsInDbAndCache(event.getOrganizationId());
             Logger.getGlobal().log(Level.SEVERE, String.format("Error creating activity for orgId=%d. Compensating %d awards. Details: %s %n", event.getOrganizationId(), compensatedAwards, e.getMessage()), e);
         }
     }

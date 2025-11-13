@@ -39,7 +39,7 @@ public class AwardsEventListenerTest {
                 .doesNotThrowAnyException();
 
         verify(activityService).createActivityForAwardsGiven(orgId, numAwards);
-        verify(awardsService, never()).compensateAwards(anyLong());
+        verify(awardsService, never()).compensateAwardsInDbAndCache(anyLong());
         verifyNoMoreInteractions(awardsService);
     }
 
@@ -51,13 +51,13 @@ public class AwardsEventListenerTest {
 
         when(activityService.createActivityForAwardsGiven(orgId, numAwards))
                 .thenThrow(new RuntimeException("activity creation failed"));
-        when(awardsService.compensateAwards(orgId)).thenReturn(numAwards);
+        when(awardsService.compensateAwardsInDbAndCache(orgId)).thenReturn(numAwards);
 
         assertThatCode(() -> listener.handleAwardsGivenToOrgMembers(event))
                 .doesNotThrowAnyException();
 
         verify(activityService).createActivityForAwardsGiven(orgId, numAwards);
-        verify(awardsService).compensateAwards(orgId);
+        verify(awardsService).compensateAwardsInDbAndCache(orgId);
         verifyNoMoreInteractions(awardsService);
     }
 }

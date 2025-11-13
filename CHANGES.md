@@ -4,53 +4,33 @@
 I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsController`
 - `AwardsController` calls `AwardsService.giveAwards`.
 
-```java
+```
     @PostMapping(value = "/give-dundie-awards/{organizationId}" , produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GiveAwardsResponse> giveDundieAwards(@PathVariable long organizationId) {
-        try {
-            int numAwards = awardsService.giveAwards(organizationId);
-            Logger.getGlobal().log(Level.INFO, String.format("Awards submitted for organizationId: %d", organizationId));
-            return ResponseEntity.ok(new GiveAwardsResponse(organizationId, numAwards));
-        } catch (Exception ex) {
-            Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit awards for organizationId: %d", organizationId), ex);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        ...
     }
 ```
 
 
 - `AwardsService.giveAwards`:
   - Increments awards for all employees in the organization via `employeeRepository.incrementDundieAwardsForOrgEmployees(...)`.
+  - Updates cache
   - And publishes an event by calling: `publisher.publishEvent`. The event is handled asynchronously in the `AwardsEventListener` (using `@Async`).
-  - If `publishEvent` fails, `compensateAwards(...);` is called to compensate, decrement awards that have been given.
-    - Note: We perform compensation (a separate operation that semantically undoes prior work) rather than a database rollback. A rollback would require the increment and event publish to be part of a single atomic transaction boundary; that is not the case here.
+  - If `publishEvent` fails, `compensateAwardsInDbAndCache(...);` is called to compensate, decrement awards that have been given in both DB and cache
   - Intended end state (assuming compensation succeeds):
-    - Either all relevant employee.dundieAwards are incremented and the event is published, or 
-    - The event is not published and the prior increments are compensated (decremented). 
+    - Either all relevant employee.dundieAwards are incremented, cache is updated, and the event is published, or non of them happens 
     - Note: If compensation itself fails, a partially updated state is possible.
 
 
-```java
+```
     public int giveAwards(long organizationId) {
-        Integer changedRows = null;
-        try {
-            changedRows = employeeRepository.incrementDundieAwardsForOrgEmployees(organizationId);
-            publisher.publishEvent(new AwardsEvent(this, changedRows, organizationId));
-            Logger.getGlobal().log(Level.INFO, String.format("Awards given and event published for organizationId: %d", organizationId));
-            return changedRows;
-        } catch (Exception e) {
-            if(changedRows != null) {
-                this.compensateAwards(organizationId);
-            }
-            Logger.getGlobal().log(Level.SEVERE, String.format("Failed to submit Awards for organizationId: %d", organizationId));
-            throw new FailedToGiveAwardsException(e);
-        }
+        ...
     }
 ```
 
 - Event handler: `AwardsEventListener`
   - Creates an activity for the Award event
-  - If activity creation fails, it calls `awardsService.compensateAwards` to compensate by decrementing `Employee.dundieAwards` for the organization. This is a compensating action, not a rollback of the original transaction.
+  - If activity creation fails, it calls `awardsService.compensateAwardsInDbAndCache` to compensate by decrementing `Employee.dundieAwards` for the organization. This is a compensating action, not a rollback of the original transaction.
 
 ```java
     @Async
@@ -60,13 +40,13 @@ I have implemented `/give-dundie-awards/{organizationId}` endpoint in: `AwardsCo
             Activity activity = activityService.createActivityForAwardsGiven(event.getOrganizationId(), event.getNumAwards());
             Logger.getGlobal().log(Level.INFO, String.format("Activity created for awards given event %s", activity.getEvent()));
         } catch (Exception e) {
-            int compensatedAwards = awardsService.compensateAwards(event.getOrganizationId());
+            int compensatedAwards = awardsService.compensateAwardsInDbAndCache(event.getOrganizationId());
             Logger.getGlobal().log(Level.SEVERE, String.format("Error creating activity for orgId=%d. Compensating %d awards. Details: %s %n", event.getOrganizationId(), compensatedAwards, e.getMessage()), e);
         }
     }
 ```
 ## Integration Tests
-I added 3 integration tests for the award/compensate feature
+I added 2 integration tests for the award/compensate feature
 - `AwardServiceSuccessIntegrationTest` The happy path where:
   - We increment Employee.dundieAwards successfully
   - We publish the event successfully

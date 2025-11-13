@@ -93,7 +93,7 @@ public class AwardsServiceImplTest {
     void compensateAwards_decrementsRepoAndCache_andReturnsRows() {
         long orgId = 3L;
         when(employeeRepository.decrementDundieAwardsForOrgEmployees(orgId)).thenReturn(4);
-        int rows = awardsService.compensateAwards(orgId);
+        int rows = awardsService.compensateAwardsInDbAndCache(orgId);
         assertThat(rows).isEqualTo(4);
         verify(employeeRepository).decrementDundieAwardsForOrgEmployees(orgId);
         verify(awardsCacheService).decrementAllForOrg(orgId);
