@@ -33,35 +33,45 @@ public class AwardsServiceImplTest {
     @Test
     void giveAwards_success_incrementsRepoAndCache_andPublishesEvent_andReturnsCount() {
         long orgId = 7L;
-        when(employeeRepository.incrementDundieAwardsForOrgEmployees(orgId)).thenReturn(3);
+        int expectedAwardsCount = 3;
+        when(employeeRepository.incrementDundieAwardsForOrgEmployees(orgId)).thenReturn(expectedAwardsCount);
 
-        int result = awardsService.giveAwards(orgId);
+        int actualResult = awardsService.giveAwards(orgId);
 
-        assertThat(result).isEqualTo(3);
+        assertThat(actualResult).isEqualTo(expectedAwardsCount);
+
+        //Verify Repo
         verify(employeeRepository).incrementDundieAwardsForOrgEmployees(orgId);
+
+        //Verify Cache
         verify(awardsCacheService).incrementAllForOrg(orgId);
+
+        //Verify publish event
         ArgumentCaptor<AwardsEvent> eventCaptor = ArgumentCaptor.forClass(AwardsEvent.class);
         verify(publisher).publishEvent(eventCaptor.capture());
         AwardsEvent evt = eventCaptor.getValue();
         assertThat(evt.getOrganizationId()).isEqualTo(orgId);
-        assertThat(evt.getNumAwards()).isEqualTo(3);
+        assertThat(evt.getNumAwards()).isEqualTo(expectedAwardsCount);
         verifyNoMoreInteractions(awardsCacheService);
     }
 
     @Test
     void giveAwards_failureAfterIncrement_compensatesAndThrows() {
         long orgId = 9L;
-        when(employeeRepository.incrementDundieAwardsForOrgEmployees(orgId)).thenReturn(2);
+        int resultCount = 2;
+        when(employeeRepository.incrementDundieAwardsForOrgEmployees(orgId)).thenReturn(resultCount);
         doThrow(new RuntimeException("publish failed")).when(publisher).publishEvent(any());
-        when(employeeRepository.decrementDundieAwardsForOrgEmployees(orgId)).thenReturn(2);
+        when(employeeRepository.decrementDundieAwardsForOrgEmployees(orgId)).thenReturn(resultCount);
 
         assertThatThrownBy(() -> awardsService.giveAwards(orgId))
                 .isInstanceOf(FailedToGiveAwardsException.class);
 
+        // Verify Repo, Service, Event
         verify(employeeRepository).incrementDundieAwardsForOrgEmployees(orgId);
         verify(awardsCacheService).incrementAllForOrg(orgId);
         verify(publisher).publishEvent(any());
-        // compensation
+
+        // Verify Compensation
         verify(employeeRepository).decrementDundieAwardsForOrgEmployees(orgId);
         verify(awardsCacheService).decrementAllForOrg(orgId);
     }

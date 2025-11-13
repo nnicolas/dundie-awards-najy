@@ -1,6 +1,5 @@
 package com.ninjaone.dundie_awards.controller;
 
-import com.ninjaone.dundie_awards.dto.GiveAwardsResponse;
 import com.ninjaone.dundie_awards.service.AwardsService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,21 +24,25 @@ class AwardsControllerTest {
 
     @Test
     void giveDundieAwards_success_returnsOkAndBody() throws Exception {
-        when(awardsService.giveAwards(7L)).thenReturn(3);
 
-        mockMvc.perform(post("/give-dundie-awards/{organizationId}", 7L)
+        long organizationId = 1;
+        int numAwards = 5;
+        when(awardsService.giveAwards(organizationId)).thenReturn(numAwards);
+
+        mockMvc.perform(post("/give-dundie-awards/{organizationId}", organizationId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.organizationId", is(7)))
-                .andExpect(jsonPath("$.awardsGiven", is(3)));
+                .andExpect(jsonPath("$.organizationId").value((int) organizationId))
+                .andExpect(jsonPath("$.awardsGiven", is(numAwards)));
     }
 
     @Test
     void giveDundieAwards_failure_returnsInternalServerError() throws Exception {
-        when(awardsService.giveAwards(7L)).thenThrow(new RuntimeException("boom"));
+        long organizationId = 1L;
+        when(awardsService.giveAwards(organizationId)).thenThrow(new RuntimeException("Exception"));
 
-        mockMvc.perform(post("/give-dundie-awards/{organizationId}", 7L)
+        mockMvc.perform(post("/give-dundie-awards/{organizationId}", organizationId)
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError());
     }

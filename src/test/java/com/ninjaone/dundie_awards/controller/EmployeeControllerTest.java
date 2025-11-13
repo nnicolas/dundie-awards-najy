@@ -35,21 +35,10 @@ class EmployeeControllerTest {
     @MockBean
     private EmployeeService employeeService;
 
-    private EmployeeDto dto(long id) {
-        EmployeeDto d = new EmployeeDto();
-        d.setId(id);
-        d.setFirstName("F"+id);
-        d.setLastName("L"+id);
-        d.setDundieAwards(0);
-        OrganizationDto org = new OrganizationDto();
-        org.setId(10L);
-        d.setOrganization(org);
-        return d;
-    }
 
     @Test
     void getAllEmployees_returnsList() throws Exception {
-        when(employeeService.getAllEmployees()).thenReturn(List.of(dto(1), dto(2)));
+        when(employeeService.getAllEmployees()).thenReturn(List.of(createEmployeeDto(1), createEmployeeDto(2)));
         mockMvc.perform(get("/employees").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
@@ -59,51 +48,57 @@ class EmployeeControllerTest {
 
     @Test
     void getEmployeeById_found() throws Exception {
-        when(employeeService.getEmployeeById(5L)).thenReturn(Optional.of(dto(5)));
-        mockMvc.perform(get("/employees/{id}", 5L).accept(MediaType.APPLICATION_JSON))
+        long employeeId = 1L;
+        when(employeeService.getEmployeeById(employeeId)).thenReturn(Optional.of(createEmployeeDto(employeeId)));
+        mockMvc.perform(get("/employees/{id}", employeeId).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(5)));
+                .andExpect(jsonPath("$.id").value((int) employeeId));
+
     }
 
     @Test
     void getEmployeeById_notFound() throws Exception {
-        when(employeeService.getEmployeeById(5L)).thenReturn(Optional.empty());
-        mockMvc.perform(get("/employees/{id}", 5L).accept(MediaType.APPLICATION_JSON))
+        long employeeId = 1L;
+        when(employeeService.getEmployeeById(employeeId)).thenReturn(Optional.empty());
+        mockMvc.perform(get("/employees/{id}", employeeId).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void createEmployee_returnsCreatedWithLocation() throws Exception {
+        long employeeId = 10L;
         EmployeeCreateDto req = new EmployeeCreateDto("Jane", "Doe", new OrganizationDto());
-        EmployeeDto saved = dto(100);
+        EmployeeDto saved = createEmployeeDto(employeeId);
         when(employeeService.save(any(EmployeeCreateDto.class))).thenReturn(saved);
 
         mockMvc.perform(post("/employees")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
-                .andExpect(header().string("Location", containsString("/employees/100")))
-                .andExpect(jsonPath("$.id", is(100)));
+                .andExpect(header().string("Location", containsString("/employees/" + employeeId)))
+                .andExpect(jsonPath("$.id").value((int) employeeId));
     }
 
     @Test
     void updateEmployee_found() throws Exception {
-        EmployeeUpdateDto upd = new EmployeeUpdateDto("NewF", "NewL", null);
-        when(employeeService.update(eq(100L), any(EmployeeUpdateDto.class))).thenReturn(Optional.of(dto(100)));
+        long employeeId = 1L;
+        EmployeeUpdateDto upd = new EmployeeUpdateDto("NewFirst", "NewLast", null);
+        when(employeeService.update(eq(employeeId), any(EmployeeUpdateDto.class))).thenReturn(Optional.of(createEmployeeDto(employeeId)));
 
-        mockMvc.perform(put("/employees/{id}", 100L)
+        mockMvc.perform(put("/employees/{id}", employeeId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(upd)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id", is(100)));
+                .andExpect(jsonPath("$.id").value((int) employeeId));
     }
 
     @Test
     void updateEmployee_notFound() throws Exception {
-        EmployeeUpdateDto upd = new EmployeeUpdateDto("NewF", "NewL", null);
-        when(employeeService.update(eq(100L), any(EmployeeUpdateDto.class))).thenReturn(Optional.empty());
+        long employeeId = 1L;
+        EmployeeUpdateDto upd = new EmployeeUpdateDto("NewFirst", "NewLast", null);
+        when(employeeService.update(eq(employeeId), any(EmployeeUpdateDto.class))).thenReturn(Optional.empty());
 
-        mockMvc.perform(put("/employees/{id}", 100L)
+        mockMvc.perform(put("/employees/{id}", employeeId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(upd)))
                 .andExpect(status().isNotFound());
@@ -111,15 +106,30 @@ class EmployeeControllerTest {
 
     @Test
     void deleteEmployee_foundNoContent() throws Exception {
-        when(employeeService.deleteEmployeeById(100L)).thenReturn(true);
-        mockMvc.perform(delete("/employees/{id}", 100L))
+        long employeeId = 1L;
+        when(employeeService.deleteEmployeeById(employeeId)).thenReturn(true);
+        mockMvc.perform(delete("/employees/{id}", employeeId))
                 .andExpect(status().isNoContent());
     }
 
     @Test
     void deleteEmployee_notFound() throws Exception {
-        when(employeeService.deleteEmployeeById(100L)).thenReturn(false);
-        mockMvc.perform(delete("/employees/{id}", 100L))
+        long employeeId = 1L;
+        when(employeeService.deleteEmployeeById(employeeId)).thenReturn(false);
+        mockMvc.perform(delete("/employees/{id}", employeeId))
                 .andExpect(status().isNotFound());
+    }
+
+
+    private EmployeeDto createEmployeeDto(long id) {
+        EmployeeDto d = new EmployeeDto();
+        d.setId(id);
+        d.setFirstName("F"+id);
+        d.setLastName("L"+id);
+        d.setDundieAwards(0);
+        OrganizationDto org = new OrganizationDto();
+        org.setId(10L);
+        d.setOrganization(org);
+        return d;
     }
 }
