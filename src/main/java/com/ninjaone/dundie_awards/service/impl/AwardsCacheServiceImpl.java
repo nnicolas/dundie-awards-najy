@@ -3,12 +3,10 @@ package com.ninjaone.dundie_awards.service.impl;
 import com.ninjaone.dundie_awards.model.Employee;
 import com.ninjaone.dundie_awards.repository.EmployeeRepository;
 import com.ninjaone.dundie_awards.service.AwardsCacheService;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,7 +14,6 @@ import java.util.stream.Collectors;
 
 /**
  * Thread-safe in-memory cache mapping orgId -> (employeeId -> dundieAwards).
- * Initialized from DB in a single read-only transaction at application startup.
  */
 @Service
 public class AwardsCacheServiceImpl implements AwardsCacheService {
@@ -36,7 +33,6 @@ public class AwardsCacheServiceImpl implements AwardsCacheService {
     }
 
     @Override
-    @Transactional(readOnly = true)
     public void initializeFromDatabase() {
         // Build a brand new structure from the current DB snapshot to ensure exact copy
         List<Employee> all = employeeRepository.findAll();
