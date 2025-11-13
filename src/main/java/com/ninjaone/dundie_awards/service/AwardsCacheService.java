@@ -32,4 +32,6 @@ public interface AwardsCacheService {
      * Remove an employee from the cache.
      */
     void removeEmployee(long orgId, long employeeId);
+
+    int getEmployeeAwards(long orgId, long employeeId);
 }

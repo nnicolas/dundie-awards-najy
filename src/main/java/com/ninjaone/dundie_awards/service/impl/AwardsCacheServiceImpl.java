@@ -82,4 +82,9 @@ public class AwardsCacheServiceImpl implements AwardsCacheService {
     public void removeEmployee(long orgId, long employeeId) {
         cache.computeIfAbsent(orgId, k -> new ConcurrentHashMap<>()).remove(employeeId);
     }
+
+    @Override
+    public int getEmployeeAwards(long orgId, long employeeId) {
+        return cache.computeIfAbsent(orgId, k -> new ConcurrentHashMap<>()).getOrDefault(employeeId, 0);
+    }
 }
