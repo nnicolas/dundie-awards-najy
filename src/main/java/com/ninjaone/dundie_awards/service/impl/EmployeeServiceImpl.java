@@ -8,10 +8,12 @@ import com.ninjaone.dundie_awards.model.Employee;
 import com.ninjaone.dundie_awards.model.Organization;
 import com.ninjaone.dundie_awards.repository.EmployeeRepository;
 import com.ninjaone.dundie_awards.repository.OrganizationRepository;
+import com.ninjaone.dundie_awards.service.AwardsCacheService;
 import com.ninjaone.dundie_awards.service.EmployeeService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,10 +23,12 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final OrganizationRepository organizationRepository;
+    private final AwardsCacheService awardsCacheService;
 
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, OrganizationRepository organizationRepository) {
+    public EmployeeServiceImpl(EmployeeRepository employeeRepository, OrganizationRepository organizationRepository, AwardsCacheService awardsCacheService) {
         this.employeeRepository = employeeRepository;
         this.organizationRepository = organizationRepository;
+        this.awardsCacheService = awardsCacheService;
     }
 
     @Override
@@ -43,10 +47,12 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Override
     @Transactional
     public boolean deleteEmployeeById(Long id) {
-        if (!employeeRepository.existsById(id)) {
+        Optional<Employee> employeeOpt = employeeRepository.findById(id);
+        if(employeeOpt.isEmpty()) {
             return false;
         }
         employeeRepository.deleteById(id);
+        awardsCacheService.removeEmployee(employeeOpt.get().getOrganization().getId(), id);
         return true;
     }
 
@@ -67,13 +73,20 @@ public class EmployeeServiceImpl implements EmployeeService {
     @Transactional
     public EmployeeDto save(EmployeeCreateDto employeeDto) {
 
-        Long orgId = employeeDto.getOrganization() != null ? employeeDto.getOrganization().getId() : null;
-        Organization org = organizationRepository.findById(orgId)
-                .orElseThrow(() -> new IllegalArgumentException("Organization not found: " + orgId));
+        if(employeeDto.getOrganization() == null) {
+            throw new InvalidParameterException("Organization is required");
+        }
+        Organization org = organizationRepository.findById(employeeDto.getOrganization().getId()).orElse(null);
+        if(org == null) {
+            throw new InvalidParameterException("Organization is required");
+        }
 
         Employee employee = EmployeeMapper.toEntity(employeeDto);
         employee.setDundieAwards(0);
         employee.setOrganization(org);
-        return EmployeeMapper.toDto(employeeRepository.save(employee));
+        Employee saved = employeeRepository.save(employee);
+        // Add to cache with initial 0 awards
+        awardsCacheService.addEmployee(org.getId(), saved.getId(), saved.getDundieAwards());
+        return EmployeeMapper.toDto(saved);
     }
 }

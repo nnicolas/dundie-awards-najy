@@ -3,6 +3,7 @@ package com.ninjaone.dundie_awards.service.impl;
 import com.ninjaone.dundie_awards.events.AwardsEvent;
 import com.ninjaone.dundie_awards.exception.FailedToGiveAwardsException;
 import com.ninjaone.dundie_awards.repository.EmployeeRepository;
+import com.ninjaone.dundie_awards.service.AwardsCacheService;
 import com.ninjaone.dundie_awards.service.AwardsService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -15,10 +16,12 @@ public class AwardsServiceImpl implements AwardsService {
 
     private final EmployeeRepository employeeRepository;
     private final ApplicationEventPublisher publisher;
+    private final AwardsCacheService awardsCacheService;
 
-    public AwardsServiceImpl(EmployeeRepository employeeRepository, ApplicationEventPublisher publisher) {
+    public AwardsServiceImpl(EmployeeRepository employeeRepository, ApplicationEventPublisher publisher, AwardsCacheService awardsCacheService) {
         this.employeeRepository = employeeRepository;
         this.publisher = publisher;
+        this.awardsCacheService = awardsCacheService;
     }
 
     /**
@@ -34,6 +37,8 @@ public class AwardsServiceImpl implements AwardsService {
         Integer changedRows = null;
         try {
             changedRows = employeeRepository.incrementDundieAwardsForOrgEmployees(organizationId);
+            // Update in-memory cache to reflect DB change
+            awardsCacheService.incrementAllForOrg(organizationId);
             publisher.publishEvent(new AwardsEvent(this, changedRows, organizationId));
             Logger.getGlobal().log(Level.INFO, String.format("Awards given and event published for organizationId: %d", organizationId));
             return changedRows;
@@ -47,6 +52,10 @@ public class AwardsServiceImpl implements AwardsService {
     }
 
     public int compensateAwards(long organizationId) {
-        return employeeRepository.decrementDundieAwardsForOrgEmployees(organizationId);
+        // First revert in DB
+        int rows = employeeRepository.decrementDundieAwardsForOrgEmployees(organizationId);
+        // Then update cache to stay in sync
+        awardsCacheService.decrementAllForOrg(organizationId);
+        return rows;
     }
 }
